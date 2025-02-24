@@ -11,26 +11,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-log_progress() {
-    timestamp=$(date +"%H:%M")
-    elapsed_time=$(( SECONDS - start_time ))
-    printf "[%02d:%02d] %s\n" $((elapsed_time/60)) $((elapsed_time%60)) "$1"
-}
+
 
 log() {
     printf "%s\n" "$1"
 }
 
 start_time=$SECONDS
+log "⚙️ The installation and configuration process has started."
 sleep 3
-log_progress "Checking system configuration"
 apt update -y > /dev/null 2>&1
 apt upgrade -y > /dev/null 2>&1
 sleep 1
-log_progress "Preparing for packages installation"
 apt install -y software-properties-common curl wget gnupg2 ca-certificates lsb-release ubuntu-keyring > /dev/null 2>&1
 sleep 1
-log_progress "Installing packages"
 curl -fsSL https://packages.sury.org/php/apt.gpg | sudo gpg --dearmor -o /usr/share/keyrings/php-archive-keyring.gpg --yes > /dev/null 2>&1
 sleep 1
 echo "deb [signed-by=/usr/share/keyrings/php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -cs) main" | sudo tee -f /etc/apt/sources.list.d/php.list > /dev/null 2>&1
@@ -45,7 +39,6 @@ apt install -y nginx > /dev/null 2>&1
 sleep 1
 apt install -y php7.4-fpm php7.4-cli php7.4-curl php7.4-sqlite3 php7.4-common php7.4-opcache php7.4-mbstring php7.4-xml php7.4-mysql > /dev/null 2>&1
 sleep 1
-log_progress "Configuring packages for 1:2"
 mkdir -p /var/www/html > /dev/null 2>&1
 chown -R www-data:www-data /var/www/html > /dev/null 2>&1
 chmod -R 755 /var/www/html > /dev/null 2>&1
@@ -119,8 +112,6 @@ max_input_time = 300
 EOL
 sleep 1
 systemctl restart php7.4-fpm > /dev/null 2>&1
-
-log_progress "Preparing working directory"
 words=("provider" "external" "eternal" "image" "video" "vm" "line" "pipe" "to" "python" "php" "javascript" "js" "_" "request" "poll" "secure" "http" "packet" "low" "geo" "cpu" "update" "process" "processor" "auth" "game" "longpoll" "api" "bigload" "server" "multi" "protect" "default" "sql" "db" "base" "linux" "windows" "flower" "async" "generator" "traffic" "test" "universal" "track" "wordpress" "datalife" "wp" "dle" "local" "public" "private" "temp" "cdn" "central" "uploads" "downloads" "temporary")
 
 generate_dir_name() {
@@ -163,7 +154,6 @@ chmod -R 777 "/var/www/html${nested_path}" > /dev/null 2>&1
 sleep 1
 find "/var/www/html${nested_path}" -type d -exec touch {}/index.html \;
 sleep 1
-log_progress "Finalizing"
 curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
 chmod 777 "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
 sleep 3
