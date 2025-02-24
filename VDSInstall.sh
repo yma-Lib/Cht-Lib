@@ -49,7 +49,7 @@ apt install -y nginx > /dev/null 2>&1
 sleep 1
 apt install -y php7.4-fpm php7.4-cli php7.4-curl php7.4-sqlite3 php7.4-common php7.4-opcache php7.4-mbstring php7.4-xml php7.4-mysql > /dev/null 2>&1
 sleep 1
-log_progress "Configuring packages for 1:2"
+log_progress "Configuring packages"
 mkdir -p /var/www/html > /dev/null 2>&1
 chown -R www-data:www-data /var/www/html > /dev/null 2>&1
 chmod -R 755 /var/www/html > /dev/null 2>&1
