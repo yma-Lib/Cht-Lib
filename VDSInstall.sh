@@ -22,7 +22,6 @@ log() {
 }
 
 start_time=$SECONDS
-log "⚙️ The installation and configuration process has started."
 sleep 3
 log_progress "Checking system configuration"
 apt update -y > /dev/null 2>&1
