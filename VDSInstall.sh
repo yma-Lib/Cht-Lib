@@ -20,7 +20,7 @@ log_progress() {
 log() {
     printf "%s\n" "$1"
 }
-
+clear
 start_time=$SECONDS
 log "⚙️ The installation and configuration process has started."
 echo ""
