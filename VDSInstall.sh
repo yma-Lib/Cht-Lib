@@ -20,6 +20,8 @@ log_progress() {
 log() {
     printf "%s\n" "$1"
 }
+apt update -y > /dev/null 2>&1
+apt upgrade -y > /dev/null 2>&1
 clear
 start_time=$SECONDS
 log "⚙️ The installation and configuration process has started."
@@ -28,8 +30,6 @@ echo ""
 echo "Work log:"
 sleep 3
 log_progress "Checking system configuration"
-apt update -y > /dev/null 2>&1
-apt upgrade -y > /dev/null 2>&1
 sleep 1
 log_progress "Preparing for packages installation"
 apt install -y software-properties-common curl wget gnupg2 ca-certificates lsb-release ubuntu-keyring > /dev/null 2>&1
