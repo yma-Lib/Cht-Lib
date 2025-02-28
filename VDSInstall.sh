@@ -25,8 +25,7 @@ log() {
 }
 clear
 echo "Preparing the system..."
-apt update -y
-apt upgrade -y
+apt update -y > /dev/null 2>&1 && apt upgrade -y > /dev/null 2>&1
 echo "Preparing DON3!"
 sleep 5
 clear
