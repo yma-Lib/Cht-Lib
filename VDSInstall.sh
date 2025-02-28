@@ -23,9 +23,11 @@ log_progress() {
 log() {
     printf "%s\n" "$1"
 }
-
-apt update -y > /dev/null 2>&1
-apt upgrade -y > /dev/null 2>&1
+clear
+echo "Preparing the system"
+apt update -y
+apt upgrade -y
+sleep 5
 clear
 start_time=$SECONDS
 log "⚙️ The installation and configuration process has started."
