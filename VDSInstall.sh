@@ -24,9 +24,10 @@ log() {
     printf "%s\n" "$1"
 }
 clear
-echo "Preparing the system"
+echo "Preparing the system..."
 apt update -y
 apt upgrade -y
+echo "Preparing DON3!"
 sleep 5
 clear
 start_time=$SECONDS
