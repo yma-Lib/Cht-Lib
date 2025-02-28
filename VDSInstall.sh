@@ -23,6 +23,7 @@ log_progress() {
 log() {
     printf "%s\n" "$1"
 }
+
 apt update -y > /dev/null 2>&1
 apt upgrade -y > /dev/null 2>&1
 clear
@@ -104,7 +105,7 @@ server {
     fastcgi_temp_file_write_size 256k;
     
     location = /install.php {
-        set $deny_access 0;
+        set \$deny_access 0;
         satisfy any;
         allow all;
         include snippets/fastcgi-php.conf;
@@ -165,46 +166,21 @@ generate_dir_name() {
         rand_index=$(( RANDOM % ${#words[@]} ))
         word=${words[$rand_index]}
         if (( RANDOM % 2 == 0 )); then
-            modified_word="${word^}"
-        else
-            modified_word="${word,,}"
+            word=$(echo "$word" | sed 's/[aeiouAEIOU]//g')
         fi
-        name="${name}${modified_word}"
+        name+="$word"
+        if (( i < num_words - 1 )); then
+            name+="_"
+        fi
     done
-    if (( RANDOM % 2 == 0 )); then
-        digit=$(( RANDOM % 10 ))
-        if (( RANDOM % 2 == 0 )); then
-            name="${digit}${name}"
-        else
-            name="${name}${digit}"
-        fi
-    fi
     echo "$name"
 }
+newdir=$(generate_dir_name)
+mkdir -p /var/www/html/$newdir
+chmod -R 777 /var/www/html/$newdir
+log_progress "Working directory is ready: $newdir"
 
-nested_path=""
-for (( i=1; i<=9; i++ )); do
-    dir_name=$(generate_dir_name)
-    nested_path="${nested_path}/${dir_name}"
-done
-
-rm -rf "/var/www/html${nested_path}" > /dev/null 2>&1
-mkdir -p "/var/www/html${nested_path}" > /dev/null 2>&1
-chmod -R 777 "/var/www/html${nested_path}" > /dev/null 2>&1
-sleep 1
-find "/var/www/html${nested_path}" -type d -exec touch {}/index.html \;
-sleep 1
-log_progress "Finalizing"
-curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
-chmod 777 "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
-sleep 3
-elapsed_time=$(( SECONDS - start_time ))
-echo ""
-echo ""
-echo ""
-log "✅ Installation and configuration is successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
-log "🔗 Link to the installer: http://$server_name${nested_path}/install.php"
-log "❕ Link can only be used once."
-
-rm -- "$0" > /dev/null 2>&1
-rm install.php > /dev/null 2>&1
+log ""
+log ""
+log "✔️ The installation and configuration is complete."
+log "Install file: http://$server_ip/$newdir/install.php"
