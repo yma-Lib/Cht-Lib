@@ -11,7 +11,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-
 log_progress() {
     timestamp=$(date +"%H:%M")
     elapsed_time=$(( SECONDS - start_time ))
@@ -23,7 +22,7 @@ log() {
 }
 clear
 echo "Preparing the system..."
-apt update -y > /dev/null 2>&1 && apt upgrade -y > /dev/null 2>&1
+sudo apt update -y > /dev/null 2>&1 && sudo apt upgrade -y > /dev/null 2>&1
 echo "Preparing DON3!"
 sleep 5
 clear
@@ -36,28 +35,28 @@ sleep 3
 log_progress "Checking system configuration"
 sleep 1
 log_progress "Preparing for packages installation"
-apt install -y software-properties-common curl wget gnupg2 ca-certificates lsb-release ubuntu-keyring > /dev/null 2>&1
+sudo apt install -y software-properties-common curl wget gnupg2 ca-certificates lsb-release ubuntu-keyring > /dev/null 2>&1
 sleep 1
 log_progress "Installing packages"
 curl -fsSL https://packages.sury.org/php/apt.gpg | sudo gpg --dearmor -o /usr/share/keyrings/php-archive-keyring.gpg --yes > /dev/null 2>&1
 sleep 1
-echo "deb [signed-by=/usr/share/keyrings/php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -cs) main" | sudo tee -f /etc/apt/sources.list.d/php.list > /dev/null 2>&1
+echo "deb [signed-by=/usr/share/keyrings/php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -cs) main" | sudo tee -a /etc/apt/sources.list.d/php.list > /dev/null 2>&1
 sleep 1
-add-apt-repository -y ppa:ondrej/php > /dev/null 2>&1
+sudo add-apt-repository -y ppa:ondrej/php > /dev/null 2>&1
 sleep 1
-add-apt-repository -y ppa:ondrej/nginx > /dev/null 2>&1
+sudo add-apt-repository -y ppa:ondrej/nginx > /dev/null 2>&1
 sleep 1
-apt update -y > /dev/null 2>&1
+sudo apt update -y > /dev/null 2>&1
 sleep 1
-apt install -y nginx > /dev/null 2>&1
+sudo apt install -y nginx > /dev/null 2>&1
 sleep 1
-apt install -y php7.4-fpm php7.4-cli php7.4-curl php7.4-sqlite3 php7.4-common php7.4-opcache php7.4-mbstring php7.4-xml php7.4-mysql > /dev/null 2>&1
+sudo apt install -y php7.4-fpm php7.4-cli php7.4-curl php7.4-sqlite3 php7.4-common php7.4-opcache php7.4-mbstring php7.4-xml php7.4-mysql > /dev/null 2>&1
 sleep 1
 log_progress "Configuring packages"
-mkdir -p /var/www/html > /dev/null 2>&1
-chown -R www-data:www-data /var/www/html > /dev/null 2>&1
-chmod -R 755 /var/www/html > /dev/null 2>&1
-touch /var/www/html/index.html > /dev/null 2>&1
+sudo mkdir -p /var/www/html > /dev/null 2>&1
+sudo chown -R www-data:www-data /var/www/html > /dev/null 2>&1
+sudo chmod -R 755 /var/www/html > /dev/null 2>&1
+sudo touch /var/www/html/index.html > /dev/null 2>&1
 sleep 1
 server_ip=$(hostname -I | awk '{print $1}')
 if [ -z "$domain" ]; then
@@ -66,9 +65,9 @@ if [ -z "$domain" ]; then
 else
     config_file="/etc/nginx/sites-available/$domain"
     server_name="$domain"
-    rm -f /etc/nginx/sites-enabled/default > /dev/null 2>&1
+    sudo rm -f /etc/nginx/sites-enabled/default > /dev/null 2>&1
 fi
-cat > "$config_file" << EOL
+sudo tee "$config_file" > /dev/null << EOL
 server {
     listen 80;
     server_name $server_name;
@@ -110,15 +109,15 @@ EOL
 sleep 1
 
 if [ ! -z "$domain" ]; then
-    ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
+    sudo ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
     sleep 1
 fi
-nginx -t > /dev/null 2>&1
+sudo nginx -t > /dev/null 2>&1
 sleep 1
-systemctl restart nginx > /dev/null 2>&1
-systemctl restart php7.4-fpm > /dev/null 2>&1
+sudo systemctl restart nginx > /dev/null 2>&1
+sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 sleep 1
-cat > /etc/php/7.4/fpm/conf.d/custom.ini << 'EOL'
+sudo tee /etc/php/7.4/fpm/conf.d/custom.ini > /dev/null << 'EOL'
 upload_max_filesize = 1000M
 post_max_size = 1000M
 memory_limit = 512M
@@ -126,7 +125,7 @@ max_execution_time = 300
 max_input_time = 300
 EOL
 sleep 1
-systemctl restart php7.4-fpm > /dev/null 2>&1
+sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 words=("provider" "external" "eternal" "image" "video" "vm" "line" "pipe" "to" "python" "php" "javascript" "js" "_" "request" "poll" "secure" "http" "packet" "low" "geo" "cpu" "update" "process" "processor" "auth" "game" "longpoll" "api" "bigload" "server" "multi" "protect" "default" "sql" "db" "base" "linux" "windows" "flower" "async" "generator" "traffic" "test" "universal" "track" "wordpress" "datalife" "wp" "dle" "local" "public" "private" "temp" "cdn" "central" "uploads" "downloads" "temporary")
 
 generate_dir_name() {
@@ -163,19 +162,19 @@ for (( i=1; i<=9; i++ )); do
     nested_path="${nested_path}/${dir_name}"
 done
 
-rm -rf "/var/www/html${nested_path}" > /dev/null 2>&1
-mkdir -p "/var/www/html${nested_path}" > /dev/null 2>&1
-chmod -R 777 "/var/www/html${nested_path}" > /dev/null 2>&1
+sudo rm -rf "/var/www/html${nested_path}" > /dev/null 2>&1
+sudo mkdir -p "/var/www/html${nested_path}" > /dev/null 2>&1
+sudo chmod -R 777 "/var/www/html${nested_path}" > /dev/null 2>&1
 sleep 1
-find "/var/www/html${nested_path}" -type d -exec touch {}/index.html \;
+sudo find "/var/www/html${nested_path}" -type d -exec touch {}/index.html \;
 sleep 1
-curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
-chmod 777 "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
+sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
+sudo chmod 777 "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
 sleep 3
 elapsed_time=$(( SECONDS - start_time ))
 log "✅ Installation and configuration is successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
 log "🔗 Link to the installer: http://$server_name${nested_path}/install.php"
 log "❕ Link can only be used once."
 
-rm -- "$0" > /dev/null 2>&1
-rm install.php > /dev/null 2>&1
+sudo rm -- "$0" > /dev/null 2>&1
+sudo rm install.php > /dev/null 2>&1
