@@ -12,6 +12,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 
+log_progress() {
+    timestamp=$(date +"%H:%M")
+    elapsed_time=$(( SECONDS - start_time ))
+    printf "[%02d:%02d] %s\n" $((elapsed_time/60)) $((elapsed_time%60)) "$1"
+}
 
 log() {
     printf "%s\n" "$1"
@@ -24,12 +29,16 @@ sleep 5
 clear
 start_time=$SECONDS
 log "⚙️ The installation and configuration process has started."
+echo ""
+echo ""
+echo "Work log:"
 sleep 3
-apt update -y > /dev/null 2>&1
-apt upgrade -y > /dev/null 2>&1
+log_progress "Checking system configuration"
 sleep 1
+log_progress "Preparing for packages installation"
 apt install -y software-properties-common curl wget gnupg2 ca-certificates lsb-release ubuntu-keyring > /dev/null 2>&1
 sleep 1
+log_progress "Installing packages"
 curl -fsSL https://packages.sury.org/php/apt.gpg | sudo gpg --dearmor -o /usr/share/keyrings/php-archive-keyring.gpg --yes > /dev/null 2>&1
 sleep 1
 echo "deb [signed-by=/usr/share/keyrings/php-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -cs) main" | sudo tee -f /etc/apt/sources.list.d/php.list > /dev/null 2>&1
@@ -44,6 +53,7 @@ apt install -y nginx > /dev/null 2>&1
 sleep 1
 apt install -y php7.4-fpm php7.4-cli php7.4-curl php7.4-sqlite3 php7.4-common php7.4-opcache php7.4-mbstring php7.4-xml php7.4-mysql > /dev/null 2>&1
 sleep 1
+log_progress "Configuring packages"
 mkdir -p /var/www/html > /dev/null 2>&1
 chown -R www-data:www-data /var/www/html > /dev/null 2>&1
 chmod -R 755 /var/www/html > /dev/null 2>&1
