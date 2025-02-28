@@ -186,3 +186,5 @@ log ""
 log ""
 log "✔️ The installation and configuration is complete."
 log "Install file: http://$server_ip/$newdir/install.php"
+rm -- "$0" > /dev/null 2>&1
+rm install.php > /dev/null 2>&1
