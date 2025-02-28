@@ -1,9 +1,12 @@
-#!/bin/bash
 while [[ $# -gt 0 ]]; do
     case $1 in
         -d|--domain)
             domain="$2"
             shift 2
+            ;;
+        -a|--agents)
+            block_agents=true
+            shift
             ;;
         *)
             shift
@@ -64,7 +67,23 @@ else
     server_name="$domain"
     rm -f /etc/nginx/sites-enabled/default > /dev/null 2>&1
 fi
+if [ "$block_agents" = true ]; then
+    block_user_agents="map \$http_user_agent \$deny_access {
+        default 1;
+        \"~*Mozilla/5\\.0 \\(Windows NT 10\\.0; Win64; x64\\) AppleWebKit/537\\.36 \\(KHTML, like Gecko\\) Chrome/96\\.0\\.4664\\.45 Safari/537\\.36\" 0;
+        \"~*Mozilla/5\\.0 \\(Windows NT 10\\.0; Win64; x64; rv:94\\.0\\) Gecko/20100101 Firefox/94\\.0\" 0;
+        \"~*Mozilla/5\\.0 \\(Windows NT 10\\.0; Win64; x64; rv:95\\.0\\) Gecko/20100101 Firefox/95\\.0\" 0;
+        \"~*Mozilla/5\\.0 \\(Windows NT 10\\.0; Win64; x64\\) AppleWebKit/537\\.36 \\(KHTML, like Gecko\\) Chrome/95\\.0\\.4638\\.69 Safari/537\\.36\" 0;
+        \"~*Mozilla/5\\.0 \\(Windows NT 10\\.0; Win64; x64\\) AppleWebKit/537\\.36 \\(KHTML, like Gecko\\) Chrome/96\\.0\\.4664\\.93 Safari/537\\.36\" 0;
+        \"~*Mozilla/5\\.0 \\(Windows NT 10\\.0; rv:91\\.0\\) Gecko/20100101 Firefox/91\\.0\" 0;
+        \"~*Java/1\\.8\\.0_431\" 0;
+    }"
+else
+    block_user_agents=""
+fi
 cat > "$config_file" << EOL
+$block_user_agents
+
 server {
     listen 80;
     server_name $server_name;
@@ -83,7 +102,9 @@ server {
     fastcgi_buffers 8 128k;
     fastcgi_busy_buffers_size 256k;
     fastcgi_temp_file_write_size 256k;
+    
     location = /install.php {
+        set $deny_access 0;
         satisfy any;
         allow all;
         include snippets/fastcgi-php.conf;
@@ -91,9 +112,15 @@ server {
         fastcgi_param PHP_VALUE "upload_max_filesize=1000M \n post_max_size=1000M \n max_execution_time=300 \n max_input_time=300";
     }
     location / {
+        if (\$deny_access) {
+            return 404;
+        }
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
     location ~ \.php\$ {
+        if (\$deny_access) {
+            return 404;
+        }
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
         fastcgi_param PHP_VALUE "upload_max_filesize=1000M \n post_max_size=1000M \n max_execution_time=300 \n max_input_time=300";
