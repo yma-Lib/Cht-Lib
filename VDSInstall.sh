@@ -1,4 +1,5 @@
 #!/bin/bash
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         -d|--domain)
@@ -20,12 +21,14 @@ log_progress() {
 log() {
     printf "%s\n" "$1"
 }
+
 clear
 echo "Preparing the system..."
 sudo apt update -y > /dev/null 2>&1 && sudo apt upgrade -y > /dev/null 2>&1
 echo "Preparing DON3!"
 sleep 5
 clear
+
 start_time=$SECONDS
 log "⚙️ The installation and configuration process has started."
 echo ""
@@ -58,74 +61,77 @@ sudo chown -R www-data:www-data /var/www/html > /dev/null 2>&1
 sudo chmod -R 755 /var/www/html > /dev/null 2>&1
 sudo touch /var/www/html/index.html > /dev/null 2>&1
 sleep 1
+
 server_ip=$(hostname -I | awk '{print $1}')
+
+# Check if domain was provided, else use server IP
 if [ -z "$domain" ]; then
-    config_file="/etc/nginx/sites-available/default"
-    server_name="$server_ip"
-else
-    config_file="/etc/nginx/sites-available/$domain"
-    server_name="$domain"
-    sudo rm -f /etc/nginx/sites-enabled/default > /dev/null 2>&1
+    domain="$server_ip"
 fi
+
+config_file="/etc/nginx/sites-available/$domain"
+
+# Nginx configuration with updated parameters (based on your manual changes)
 sudo tee "$config_file" > /dev/null << EOL
 server {
-    listen 80;
-    server_name $server_name;
+    listen 80 default_server;
+    #listen [::]:80 default_server;
+
     root /var/www/html;
-    index index.php index.html;
-    client_max_body_size 0;
-    client_body_buffer_size 128k;
-    client_header_buffer_size 64k;
-    large_client_header_buffers 4 64k;
-    client_body_timeout 300s;
-    client_header_timeout 300s;
-    keepalive_timeout 300s;
-    send_timeout 300s;
-    fastcgi_read_timeout 300s;
-    fastcgi_buffer_size 256k;
-    fastcgi_buffers 8 128k;
-    fastcgi_busy_buffers_size 256k;
-    fastcgi_temp_file_write_size 256k;
-    location = /install.php {
-        satisfy any;
-        allow all;
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
-        fastcgi_param PHP_VALUE "upload_max_filesize=1000M \n post_max_size=1000M \n max_execution_time=300 \n max_input_time=300";
-    }
+
+    index index.php index.html index.htm index.nginx-debian.html;
+
+    server_name $domain;
+
+    keepalive_timeout 70;
+
+    client_max_body_size 9000000m;
+    client_body_timeout 120;
+    large_client_header_buffers 32 256k;
+
     location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
+        try_files \$uri \$uri/ =404;
     }
+
     location ~ \.php\$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
-        fastcgi_param PHP_VALUE "upload_max_filesize=1000M \n post_max_size=1000M \n max_execution_time=300 \n max_input_time=300";
+        fastcgi_request_buffering off;
     }
+
     location ~ /\.ht {
         deny all;
     }
 }
 EOL
-sleep 1
 
+# Enable the site by creating a symlink in sites-enabled
 if [ ! -z "$domain" ]; then
     sudo ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
     sleep 1
 fi
+
+# Check Nginx configuration and restart services
 sudo nginx -t > /dev/null 2>&1
 sleep 1
 sudo systemctl restart nginx > /dev/null 2>&1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 sleep 1
+
+# Update PHP configuration
 sudo tee /etc/php/7.4/fpm/conf.d/custom.ini > /dev/null << 'EOL'
-upload_max_filesize = 1000M
-post_max_size = 1000M
-memory_limit = 512M
-max_execution_time = 300
-max_input_time = 300
+memory_limit = 800M
+max_execution_time = 60
+post_max_size = 9000000M
+upload_max_filesize = 9000000M
+max_input_time = 60
+max_input_vars = 1000
 EOL
+
 sleep 1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
+
+# Generate random directory structure
 words=("provider" "external" "eternal" "image" "video" "vm" "line" "pipe" "to" "python" "php" "javascript" "js" "_" "request" "poll" "secure" "http" "packet" "low" "geo" "cpu" "update" "process" "processor" "auth" "game" "longpoll" "api" "bigload" "server" "multi" "protect" "default" "sql" "db" "base" "linux" "windows" "flower" "async" "generator" "traffic" "test" "universal" "track" "wordpress" "datalife" "wp" "dle" "local" "public" "private" "temp" "cdn" "central" "uploads" "downloads" "temporary")
 
 generate_dir_name() {
@@ -171,9 +177,10 @@ sleep 1
 sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
 sudo chmod 777 "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
 sleep 3
+
 elapsed_time=$(( SECONDS - start_time ))
 log "✅ Installation and configuration is successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
-log "🔗 Link to the installer: http://$server_name${nested_path}/install.php"
+log "🔗 Link to the installer: http://$domain${nested_path}/install.php"
 log "❕ Link can only be used once."
 
 sudo rm -- "$0" > /dev/null 2>&1
