@@ -64,14 +64,12 @@ sleep 1
 
 server_ip=$(hostname -I | awk '{print $1}')
 
-# Check if domain was provided, else use server IP
 if [ -z "$domain" ]; then
     domain="$server_ip"
 fi
 
 config_file="/etc/nginx/sites-available/$domain"
 
-# Nginx configuration with updated parameters (based on your manual changes)
 sudo tee "$config_file" > /dev/null << EOL
 server {
     listen 80 default_server;
@@ -105,20 +103,17 @@ server {
 }
 EOL
 
-# Enable the site by creating a symlink in sites-enabled
 if [ ! -z "$domain" ]; then
     sudo ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
     sleep 1
 fi
 
-# Check Nginx configuration and restart services
 sudo nginx -t > /dev/null 2>&1
 sleep 1
 sudo systemctl restart nginx > /dev/null 2>&1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 sleep 1
 
-# Update PHP configuration
 sudo tee /etc/php/7.4/fpm/conf.d/custom.ini > /dev/null << 'EOL'
 memory_limit = 800M
 max_execution_time = 60
@@ -131,7 +126,6 @@ EOL
 sleep 1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 
-# Generate random directory structure
 words=("provider" "external" "eternal" "image" "video" "vm" "line" "pipe" "to" "python" "php" "javascript" "js" "_" "request" "poll" "secure" "http" "packet" "low" "geo" "cpu" "update" "process" "processor" "auth" "game" "longpoll" "api" "bigload" "server" "multi" "protect" "default" "sql" "db" "base" "linux" "windows" "flower" "async" "generator" "traffic" "test" "universal" "track" "wordpress" "datalife" "wp" "dle" "local" "public" "private" "temp" "cdn" "central" "uploads" "downloads" "temporary")
 
 generate_dir_name() {
