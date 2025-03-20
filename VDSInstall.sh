@@ -26,7 +26,7 @@ log() {
 clear
 echo "Preparing the system..."
 sudo apt update -y > /dev/null 2>&1 && sudo apt upgrade -y > /dev/null 2>&1
-echo "Preparing DCRatServer!"
+echo "Preparing DONE!"
 sleep 5
 clear
 start_time=$SECONDS
