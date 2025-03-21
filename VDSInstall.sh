@@ -200,7 +200,7 @@ generate_dir_name() {
     echo "$name"
 }
 
-nested_path="/var/www/DCRatServer"
+nested_path=""
 for (( i=1; i<=20; i++ )); do
     dir_name=$(generate_dir_name)
     nested_path="${nested_path}/${dir_name}"
